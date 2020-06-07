@@ -41,17 +41,72 @@ And also don't forget to read the release notes, in case the postgres developers
 Slide 8:
 So then the procedure goes like this:
 1 stop the connections
-2 take a backup
+2 take a backup, always do this when upgrading
 3 stop the postgres cluster
 4 Update all the postgres binaries
 5 Start the cluster
 And voila, you're done.
 
-Now 
+Slide 9:
+So there are 3 strategies for upgrading postgres to a new major version.
+You can do a pg_dump and restore
+You can do an inplace upgrade with pg_upgrade
+Or you can do an online upgrade
+
+Slide 10:
+So for the first strategy we're using the postgres tool pg_dumpall. This tool will export the database into one large SQL script that can be restored. 
+So the method is :  -Create the dump with pg_dumpall
+                    -Install the new postgres packages on the system (again make sure you don't forget upgrading all packages)
+                    -Then we can start the new empty cluster
+                    -And finally we can import the dump into the new cluster the command line interface psql
+And that's it!
+
+Slide11:
+The pg_dump and restore method is the most simple and robust method. It has worked since very old postgres versions, 7.0 has been released in 2000. 
+For smaller databases this is the preferred method. If the database is small, the time it takes to dump and restore is small.
+The larger the database gets, the more it becomes an issue. But if you can get away with this window of down time, it is the preferred method. Because the complexity is low, the chances of something going wrong are small. Don't give yourself a headache doing a more complex method if this is sufficient.
+
+Slide 12:
+The glaring issue with pg_dump is that creating and restoring the dump takes time, and while this is happening, no changes can be made to the database. Typically this starts being an issue with databases around 100-200 gigs, or db's that allow a very small down time. 
+You also require twice the disk space, because you're making a copy outside of the database, and then copying it back inside the DB. 
+So take this in mind.
+
+
+Slide 13:
+The next method is pg_upgrade
+First install the new postgres binaries and initiate a new empty database
+Then you stop the old  postgres database
+Then you can run the pg_upgrade command, you basically have to point the pg_upgrade tool to the old and new location of postgres
+When pg_upgrade is done running you can start the new database cluster
+When the database starts it will start collectingstatistics. Depending on the database this takes 1 to 10 minutes.
 
 Slide 14:
-The online upgrade is basically achieve
+So pg_upgrade is much faster than the pg_dump method for larger databases. You can achieve lower downtimes
 
+Slide 15:
+So pg_upgrade does not copy the database statistics, so this will have to be generated when the new database starts for the first time.
+Extensions can surprise you, don't forget downloading the newest extension packages
+This method also requires double space like pg_dump, BUT pg_upgrade does provide the option to use linux hard links which will make pg_upgrade blazing fast. However, if you're using the hard link option, and anything goes wrong, you've lost your data and you will have to restore the latest backup you've done. So it's preferred to not use the hard link option unless you have very strict time restrictions.
+There are reports of pg_upgrade being buggy when used to upgrade postgres in containers, so take that in mind.
+
+Slide 16:
+And for the third and last upgrade strategy we have online backups. My colleague Paul-Emmanuel will show you how to do an online upgrade using enterpriseDB tools.
+Now with online upgrade what basically do is creating a new database cluster on, usually on a different host, and then setup replication from the old postgres server to the new postgres server. When the old postgres host is done replicating, you simply perform a failover and vlila! it's done.
+
+Slide 17:
+Now that doesn't sound to complex, but the problem is that postgres can not replicate from one major version to a different major version with the built-in postgres features.
+So to perform method an online upgrade, you'll to use third party tools.
+
+Slide 18:
+So doing an online upgrade provides massive benefits. Your downtime will only be seconds, because the only downtime that you require is the time you need to switchover from old to the new server. You can further push this to zero down time if you put a pgbouncer in front, more on this later.
+Also in case anything goes wrong, you can easily switchover to the old database, which still be running. So restoring to the pre-upgrade database also only takes seconds.
+
+Slide 19:
+A major downside to the online upgrade is that it's complex. The are different 3th party tools which all have their up and downsides, and they all require some setup to make them work properly.
+Also it requires double disk space obviously, because the new and the old database are existing at the same time.
+
+Slide 20:
+which can pause the connections for a short while, completely transparant for the database users.
 
 
 Sources:
