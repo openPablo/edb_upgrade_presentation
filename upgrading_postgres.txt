@@ -1,0 +1,63 @@
+Slide 2; intro
+Hi all, 
+My name is Pablo Hendrickx. I'm a Postgres dba/consultant working for zebanza. 
+After this presentation you will have a better overview of how postgres does updates and what benefits they have. 
+I will also walk you through some more technical details of the various strategies you have at your disposal to upgrade your system, and what the up and downsides are of the different strategies. 
+This presentation will take about 20 minutes and is 20 slides long.
+
+Slide 3:
+So why should you upgrade in the first place? Upgrading is a hassle right? Why should I fix something that isn't broken?
+Well I can give you a couple of reasons why you should regularely upgrade to the latest major postgres version:
+    More security: New authentication methods and SSL version support are regularly added to Postgres
+    More performance without changing anything on the application level! The postgres query optimizer gets frequently upgraded over the years. 
+    New features for developers, like new indexing and partitioning features can dramatically increase performance
+    New SQL implementations. These new functions give more power to the developers to do stuff with less code
+    Better management features for us DBA's. Postgres updates bring more options to replication, backup, monitoring and also make these features smoother and easier to work with.
+    End of life of a postgres version is reached after 5 years, so after 5 years you will stop getting security patches
+    And lastly, if a DBA does upgrades frequently, he will be experienced with the procedure which will make the process less painful.
+
+Slide 4:
+So why should you take the time to apply the frequent minor versions?
+Applying a minor update is low risk and simple, and only has benefits. Applying a minor update is a lot easier than upgrading the major version.
+Minor version releases are basically postgres patches.
+Minor versions only fix bugs, security issues and corruption problems. It will not add any new features or change the way postgres works. It's so risk free that the community considers not upgrading to be riskier than upgrading.
+
+Slide 5:
+The postgres dev team releases a new major version once every year, around september. The EnterpriseDB version of that release gets typically released about 3-4 months after that.
+Minor version releases happen once every 3 months. 
+If you want to be extra prudent, if you want to be conservative, it's a good practice to not upgrade straight away when a new major version gets released in september, but instead wait till that version gets a first minor update. This way the developers have time to fix bugs that might have slipped through. 
+
+Slide 6:
+A quick recap of how postgres versioning numbering works, because it's slightly confusing:
+The old way of numbering used two numbers for the major version, 9.6 in this example. And the last, third, number tells you what the minor version is (3 in this example). This was of course a bit confusing so this was changed from version 10 onwards.
+With the new way, the first number is the major version, and the second number is the minor version.
+
+Slide 7:
+So, to upgrade postgres to the latest minor version you basically have to update the postgres binaries and restart the database. Simple enough, right?
+You have to double check some stuff though.
+Make sure that you upgrade all the postgres binaries. Typically, you will have some extra packages installed like pgbouncer or the postgresql contrib package, or some other drivers. It's good practice to have everything of the same version. 
+And also don't forget to read the release notes, in case the postgres developers have any special remarks.
+
+Slide 8:
+So then the procedure goes like this:
+1 stop the connections
+2 take a backup
+3 stop the postgres cluster
+4 Update all the postgres binaries
+5 Start the cluster
+And voila, you're done.
+
+Now 
+
+Slide 14:
+The online upgrade is basically achieve
+
+
+
+Sources:
+https://fosdem.org/2020/schedule/event/postgresql_an_ultimate_guide_to_upgrading_your_postgresql_installation/
+
+https://www.postgresql.org/support/versioning/
+
+https://www.cybertec-postgresql.com/en/a-primer-on-postgresql-upgrade-methods/
+
