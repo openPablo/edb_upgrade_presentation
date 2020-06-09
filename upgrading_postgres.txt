@@ -1,118 +1,155 @@
 Slide 2; intro
 Hi all, 
-My name is Pablo Hendrickx. I'm a Postgres dba/consultant working for zebanza. 
-After this presentation you will have a better overview of how postgres does updates and what benefits they have. 
+My name is Pablo Hendrickx. I'm a Postgres dba working for zebanza. I do both consulting and support.  I do high availability, backups, monitoring, tuning,... everything postgres related!
+
+And today I will talk about postgres updates. This presentation will give you a  better overview of how postgres does updates and what benefits they have. 
 I will also walk you through some more technical details of the various strategies you have at your disposal to upgrade your system, and what the up and downsides are of the different strategies. 
-This presentation will take about 20 minutes and is 20 slides long.
+This presentation will take about 20 minutes and is 25 slides long.
+
 
 Slide 3:
-So why should you upgrade in the first place? Upgrading is a hassle right? Why should I fix something that isn't broken?
-Well I can give you a couple of reasons why you should regularely upgrade to the latest major postgres version:
-    More security: New authentication methods and SSL version support are regularly added to Postgres
-    More performance without changing anything on the application level! The postgres query optimizer gets frequently upgraded over the years. 
-    New features for developers, like new indexing and partitioning features can dramatically increase performance
-    New SQL implementations. These new functions give more power to the developers to do stuff with less code
-    Better management features for us DBA's. Postgres updates bring more options to replication, backup, monitoring and also make these features smoother and easier to work with.
-    End of life of a postgres version is reached after 5 years, so after 5 years you will stop getting security patches
-    And lastly, if a DBA does upgrades frequently, he will be experienced with the procedure which will make the process less painful.
-
-Slide 4:
-So why should you take the time to apply the frequent minor versions?
-Applying a minor update is low risk and simple, and only has benefits. Applying a minor update is a lot easier than upgrading the major version.
-Minor version releases are basically postgres patches.
-Minor versions only fix bugs, security issues and corruption problems. It will not add any new features or change the way postgres works. It's so risk free that the community considers not upgrading to be riskier than upgrading.
-
-Slide 5:
 The postgres dev team releases a new major version once every year, around september. The EnterpriseDB version of that release gets typically released about 3-4 months after that.
 Minor version releases happen once every 3 months. 
 If you want to be extra prudent, if you want to be conservative, it's a good practice to not upgrade straight away when a new major version gets released in september, but instead wait till that version gets a first minor update. This way the developers have time to fix bugs that might have slipped through. 
 
-Slide 6:
+Slide 4:
 A quick recap of how postgres versioning numbering works, because it's slightly confusing:
-The old way of numbering used two numbers for the major version, 9.6 in this example. And the last, third, number tells you what the minor version is (3 in this example). This was of course a bit confusing so this was changed from version 10 onwards.
-With the new way, the first number is the major version, and the second number is the minor version.
+The old way of numbering used two numbers for the major version, 9 and 6 in this example. And the last, third, number tells you what the minor version is (3 in this example). This was of course a bit confusing so this was changed from version 10 onwards.
+With the new way, the first number is the major version, and the second number is the minor version,much more straight forward.
+
+Slide 5:
+So why should you upgrade in the first place, right?  DBA's don't like upgrading because databases usually are very stable, and well, why fix something that isn't broken?
+
+Slide 6:
+Well I can give you a couple of reasons why you should upgrade to the latest major version of postgres:
+    More security: New authentication methods and SSL version support are regularly added to Postgres
+    
+    More performance without changing anything in the application layer! The postgres query optimizer gets frequently upgraded over the years. 
+    
+    New features for developers, like new indexing and partitioning features which can dramatically increase performance
+    
+    New SQL implementations. These new functions give more power to the developers to do stuff with less code
+    
+    Better management features for us DBA's. Postgres updates bring more options to replication, backup, monitoring and also make these features smoother and easier to work with.
+    
+    You also can't forget that the end of life of a postgres version is reached after 5 years, so after 5 years you will stop getting security patches and bug fixes
+    
+    And lastly, if a DBA does upgrades frequently, he will be experienced with the procedure which will make the process less painful. 
 
 Slide 7:
+So why should you take the time to apply the frequent minor releases?
+Applying a minor update is low risk and simple, it only has benefits. Applying a minor update is a lot easier than upgrading the major version.
+Minor version releases are basically postgres patches.
+Minor versions only fix bugs, security issues and corruption problems. It will not add any new features or change the way postgres works. It's so risk free that the community considers not upgrading to be riskier than upgrading.
+
+
+Slide 8:
 So, to upgrade postgres to the latest minor version you basically have to update the postgres binaries and restart the database. Simple enough, right?
 You have to double check some stuff though.
 Make sure that you upgrade all the postgres binaries. Typically, you will have some extra packages installed like pgbouncer or the postgresql contrib package, or some other drivers. It's good practice to have everything of the same version. 
 And also don't forget to read the release notes, in case the postgres developers have any special remarks.
 
-Slide 8:
+
+Slide 9:
 So then the procedure goes like this:
 1 stop the connections
 2 take a backup, always do this when upgrading
 3 stop the postgres cluster
-4 Update all the postgres binaries
+4 Update all the postgres binaries using your package manager
 5 Start the cluster
-And voila, you're done.
+And voila, you're done. You have upgraded your postgres DB to the latest version
+In the screenshot you can see me checking if there is anything funky installed and then updating it all.
 
-Slide 9:
+Slide 10:
+Lets talk major versions releases now
 So there are 3 strategies for upgrading postgres to a new major version.
 You can do a pg_dump and restore
 You can do an inplace upgrade with pg_upgrade
 Or you can do an online upgrade
+I will go over each of these strategies now, give you the pro's and contra's, and the basics steps required to perform it.
 
-Slide 10:
+Slide 11:
 So for the first strategy we're using the postgres tool pg_dumpall. This tool will export the database into one large SQL script that can be restored. 
-So the method is :  -Create the dump with pg_dumpall
-                    -Install the new postgres packages on the system (again make sure you don't forget upgrading all packages)
-                    -Then we can start the new empty cluster
-                    -And finally we can import the dump into the new cluster the command line interface psql
-And that's it!
+You should use pg_dumpall over pg_dump, because pg_dumpall also dumps global objects which pg_dump does not. This includes databases, users, groups and some other stuff.
 
-Slide11:
-The pg_dump and restore method is the most simple and robust method. It has worked since very old postgres versions, 7.0 has been released in 2000. 
-For smaller databases this is the preferred method. If the database is small, the time it takes to dump and restore is small.
-The larger the database gets, the more it becomes an issue. But if you can get away with this window of down time, it is the preferred method. Because the complexity is low, the chances of something going wrong are small. Don't give yourself a headache doing a more complex method if this is sufficient.
-
-Slide 12:
-The glaring issue with pg_dump is that creating and restoring the dump takes time, and while this is happening, no changes can be made to the database. Typically this starts being an issue with databases around 100-200 gigs, or db's that allow a very small down time. 
-You also require twice the disk space, because you're making a copy outside of the database, and then copying it back inside the DB. 
-So take this in mind.
+slide 12
+So the method is :  -Get the new postgres software
+                    -Initiate the database in a new data path or on a new host
+                    -Create the dump with pg_dumpall
+                    -And finally we can import the dump into the new cluster with psql
+And that's it!In the screenshot you can see me specifying the connection options while using these tools
 
 
 Slide 13:
-The next method is pg_upgrade
-First install the new postgres binaries and initiate a new empty database
-Then you stop the old  postgres database
-Then you can run the pg_upgrade command, you basically have to point the pg_upgrade tool to the old and new location of postgres
-When pg_upgrade is done running you can start the new database cluster
-When the database starts it will start collectingstatistics. Depending on the database this takes 1 to 10 minutes.
+The pg_dump and restore method is the most simple and robust method. It has worked since very old postgres versions, 7.0 has been released in 2000. 
+For smaller databases this is the preferred method. If the database is small, the time it takes to create the dump and restore it back is short.
+The larger the database gets, the more it becomes an issue. But if you can get away with this window of down time, it is the preferred method. Because the complexity is low, the chances of something going wrong are small. Don't give yourself a headache doing a more complex method if this is sufficient.
 
 Slide 14:
-So pg_upgrade is much faster than the pg_dump method for larger databases. You can achieve lower downtimes
+The glaring issue with pg_dump is that creating and restoring the dump takes lot of time, and while this is happening, no changes can be made to the database. Typically this starts being an issue with databases around 100-200 gigs, or db's that allow a very small down time. 
+You also require twice the disk space, because you're making a copy outside of the database, and then copying it back inside a DB. 
+So take this in mind.
+
 
 Slide 15:
-So pg_upgrade does not copy the database statistics, so this will have to be generated when the new database starts for the first time.
-Extensions can surprise you, don't forget downloading the newest extension packages
-This method also requires double space like pg_dump, BUT pg_upgrade does provide the option to use linux hard links which will make pg_upgrade blazing fast. However, if you're using the hard link option, and anything goes wrong, you've lost your data and you will have to restore the latest backup you've done. So it's preferred to not use the hard link option unless you have very strict time restrictions.
-There are reports of pg_upgrade being buggy when used to upgrade postgres in containers, so take that in mind.
+The next method is pg_upgrade
+The way it works is that it detaches pg_catalog and pg_clog, transfers the datafiles to the new database, and then reattaches the datafiles to everything it needs.
 
 Slide 16:
-And for the third and last upgrade strategy we have online backups. My colleague Paul-Emmanuel will show you how to do an online upgrade using enterpriseDB tools.
-Now with online upgrade what basically do is creating a new database cluster on, usually on a different host, and then setup replication from the old postgres server to the new postgres server. When the old postgres host is done replicating, you simply perform a failover and vlila! it's done.
+First install the new postgres binaries and initiate a new empty database. Extensions can surprise you, don't forget downloading the newest extension packages when getting the new software.
+Then you stop the old  postgres database, make sure the new DB is also down
+Then you can run the pg_upgrade command. You have to point the pg_upgrade tool to the old and new bin directory, and to the old and new data directory. See the example below 
+When pg_upgrade is done running it will generate a file called "analyze_new_cluster" which you have to run after starting the new database. This script will collect statistics which takes about 1 to 10 minutes, depending on the DB.
 
-Slide 17:
-Now that doesn't sound to complex, but the problem is that postgres can not replicate from one major version to a different major version with the built-in postgres features.
-So to perform method an online upgrade, you'll to use third party tools.
+Slide 17: 
+Here's a picture of what it looks like when pg_upgrade generates that analyze script. If you don't run this the database will be very slow at startup
 
 Slide 18:
-So doing an online upgrade provides massive benefits. Your downtime will only be seconds, because the only downtime that you require is the time you need to switchover from old to the new server. You can further push this to zero down time if you put a pgbouncer in front, more on this later.
-Also in case anything goes wrong, you can easily switchover to the old database, which still be running. So restoring to the pre-upgrade database also only takes seconds.
+ pg_upgrade provides the option to use linux hard links which will make pg_upgrade blazing fast. However, if you're using the hard link option, you will not be able to start the old database cluster.
+ So, if anything goes wrong, you've lost your data and you will have to restore the latest backup you've made. It's preferred to not use the hard link option unless you have very strict time restrictions.
 
 Slide 19:
-A major downside to the online upgrade is that it's complex. The are different 3th party tools which all have their up and downsides, and they all require some setup to make them work properly.
-Also it requires double disk space obviously, because the new and the old database are existing at the same time.
+So pg_upgrade is much faster than the pg_dump method for larger databases. You can achieve low downtimes, which is the benefit of using this method. If you're using the hardlink option you can achieve very low downtimes.
+It's also not too complicated, it uses built in postgres tools
 
 Slide 20:
-which can pause the connections for a short while, completely transparant for the database users.
+This method also requires double space, unless you're using the hardlink option.
+And it's also risky when using hardlinks.
+There are reports of pg_upgrade being buggy when used to upgrade postgres in containers, so take that in mind.
 
+Slide 21:
+And for the third and last upgrade strategy we have online backups. My colleague Paul-Emmanuel will show you how to do an online upgrade using enterpriseDB tools.
+Now with online upgrade what you basically do is create a new database cluster on, usually on a different host, and then setup replication from the old postgres server to the new postgres server. When the old postgres host is done replicating, you simply perform a failover and voila! it's done.
 
+Slide 22:
+Now that doesn't sound too complex, but the problem is that postgres can not replicate from one major version to a different major version using streaming replication. Most postgres setups are installed using streaming replication, since it's the default method of doing replication. 
+So to perform an online upgrade, you will often find yourself in a situation where you will have to change the replication from streaming to logical replication, which will also create downtime and complexity. Streaming replication is also better than logical replication in certain situations, so you might not want to change the replication settings at all. 
+
+So the other option you have is using third party tools to do the replication
+
+Slide 23:
+Your main options are enterpriseDB replication server, on which my colleague will do a full technical demo how to perform an upgrade
+And the second, main option you have is Slony. Slony is a tool from back when postgres replication was not as good as it is today. You can use this tool to replicate between hosts that have a different major version. Keep in mind that it does add a layer of complexity and takes some time to learn and setup.
+
+Slide 24:
+So doing an online upgrade provides massive benefits. Your downtime will only be seconds, because the only downtime that you require is the time you need to switchover from old to the new server. You can further push this to zero down time if you put a pgbouncer in front.
+Also in case anything goes wrong, you can easily switchover to the old database, which will still be running. So restoring to the pre-upgrade database only takes seconds.
+
+Slide 25:
+A major downside to the online upgrade is that it adds another layer of complexity. My colleague Paul-Emmanuel will give you a full technical demo so you get an idea how to get started on this.
+Also it requires double disk space obviously, because the new and the old database are existing at the same time.
+
+Slide 26:
+So here are some sources I used, make a screenshot, or grab em from the powerpoint which will ge uploaded
 Sources:
+
+
+Ilya Kosmodemiansky
 https://fosdem.org/2020/schedule/event/postgresql_an_ultimate_guide_to_upgrading_your_postgresql_installation/
-
 https://www.postgresql.org/support/versioning/
-
+https://www.enterprisedb.com/edb-docs/d/postgresql/reference/manual/9.4.24/pgupgrade.html
+https://www.percona.com/blog/2019/04/04/replication-between-postgresql-versions-using-logical-replication/
 https://www.cybertec-postgresql.com/en/a-primer-on-postgresql-upgrade-methods/
 
+
+I hope this was helpful to you guys, are there any questions?
